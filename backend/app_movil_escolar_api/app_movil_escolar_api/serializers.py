@@ -1,32 +1,63 @@
-from django.contrib.auth.models import User
+# app_movil_escolar_api/serializers.py
+
 from rest_framework import serializers
-from .models import *
-from .models import Alumnos, Maestros
+# Asegúrate de que los nombres de los modelos importados coincidan
+# exactamente con los nombres de las clases en tu archivo 'models.py'.
+# La convención en Django es usar singular: Administrador, Maestro, Alumno.
+from .models import Administrador, Maestro, Alumno
 
-class UserSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(read_only=True)
-    first_name = serializers.CharField(required=True)
-    last_name = serializers.CharField(required=True)
-    email = serializers.CharField(required=True)
-
+# --- Serializador para el modelo Administrador ---
+class AdministradorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['id','first_name','last_name', 'email']
+        model = Administrador
+        # Lista explícitamente solo los campos que necesitas para el registro.
+        # Esto te da control y seguridad sobre los datos de tu API.
+        fields = ['id', 'nombre', 'correo', 'password', 'clave_admin']
+        
+        # Opciones extra para los campos.
+        extra_kwargs = {
+            # 'password' será de solo escritura (no se enviará en la respuesta).
+            'password': {'write_only': True},
+            # 'id' será de solo lectura (no se requiere al crear).
+            'id': {'read_only': True}
+        }
 
-class AdminSerializer(serializers.ModelSerializer):
-    user=UserSerializer(read_only=True)
-    class Meta:
-        model = Administradores
-        fields = '__all__'
+    # Esta función se ejecuta al crear un nuevo administrador.
+    # Es crucial para asegurar que la contraseña se guarde de forma segura (hasheada).
+    def create(self, validated_data):
+        # Usamos el método create_user que maneja el hasheo de la contraseña.
+        # Este método debe existir en el manager de tu modelo de usuario personalizado.
+        administrador = Administrador.objects.create_user(**validated_data)
+        return administrador
 
-class AlumnosSerializer(serializers.ModelSerializer):
-    user=UserSerializer(read_only=True)
-    class Meta:
-        model = Alumnos
-        fields = '__all__'
 
-class MaestrosSerializer(serializers.ModelSerializer):
-    user=UserSerializer(read_only=True)
+# --- Serializador para el modelo Maestro ---
+class MaestroSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Maestros
-        fields = '__all__'
+        model = Maestro
+        # Adapta los campos según tu modelo Maestro.
+        fields = ['id', 'nombre', 'correo', 'password', 'materia']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'id': {'read_only': True}
+        }
+    
+    def create(self, validated_data):
+        maestro = Maestro.objects.create_user(**validated_data)
+        return maestro
+
+
+# --- Serializador para el modelo Alumno ---
+class AlumnoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alumno
+        # Adapta los campos según tu modelo Alumno.
+        fields = ['id', 'nombre', 'correo', 'password', 'grado', 'grupo']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'id': {'read_only': True}
+        }
+
+    def create(self, validated_data):
+        alumno = Alumno.objects.create_user(**validated_data)
+        return alumno
